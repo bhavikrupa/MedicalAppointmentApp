@@ -1,0 +1,163 @@
+<div class="appointment-scheduling">
+  <div class="header">
+    <h1>Appointment Scheduling</h1>
+    <button class="btn btn-primary" (click)="toggleForm()">
+      {{ showForm ? 'Cancel' : 'Schedule New Appointment' }}
+    </button>
+  </div>
+
+  <!-- Success/Error Messages -->
+  <div *ngIf="successMessage" class="alert alert-success">
+    {{ successMessage }}
+  </div>
+  <div *ngIf="errorMessage" class="alert alert-error">
+    {{ errorMessage }}
+  </div>
+
+  <!-- Appointment Form -->
+  <div *ngIf="showForm" class="appointment-form-container">
+    <h2>Schedule New Appointment</h2>
+    <form [formGroup]="appointmentForm" (ngSubmit)="onSubmit()">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="patientId">Patient *</label>
+          <select 
+            id="patientId" 
+            formControlName="patientId"
+            [class.error]="appointmentForm.get('patientId')?.invalid && appointmentForm.get('patientId')?.touched"
+          >
+            <option value="">Select a patient</option>
+            <option *ngFor="let patient of patients" [value]="patient.id">
+              {{ patient.firstName }} {{ patient.lastName }}
+            </option>
+          </select>
+          <span class="error-message" *ngIf="appointmentForm.get('patientId')?.invalid && appointmentForm.get('patientId')?.touched">
+            Patient is required
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label for="doctorId">Doctor *</label>
+          <select 
+            id="doctorId" 
+            formControlName="doctorId"
+            [class.error]="appointmentForm.get('doctorId')?.invalid && appointmentForm.get('doctorId')?.touched"
+          >
+            <option value="">Select a doctor</option>
+            <option *ngFor="let doctor of doctors" [value]="doctor.id">
+              Dr. {{ doctor.firstName }} {{ doctor.lastName }} - {{ doctor.specialization }}
+            </option>
+          </select>
+          <span class="error-message" *ngIf="appointmentForm.get('doctorId')?.invalid && appointmentForm.get('doctorId')?.touched">
+            Doctor is required
+          </span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="appointmentDate">Appointment Date *</label>
+          <input 
+            type="date" 
+            id="appointmentDate" 
+            formControlName="appointmentDate"
+            [min]="getCurrentDate()"
+            [class.error]="appointmentForm.get('appointmentDate')?.invalid && appointmentForm.get('appointmentDate')?.touched"
+          />
+          <span class="error-message" *ngIf="appointmentForm.get('appointmentDate')?.invalid && appointmentForm.get('appointmentDate')?.touched">
+            Appointment date is required
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label for="durationMinutes">Duration (minutes) *</label>
+          <select id="durationMinutes" formControlName="durationMinutes">
+            <option [value]="15">15 minutes</option>
+            <option [value]="30">30 minutes</option>
+            <option [value]="45">45 minutes</option>
+            <option [value]="60">60 minutes</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Available Time Slots -->
+      <div class="form-group" *ngIf="appointmentForm.get('doctorId')?.value && appointmentForm.get('appointmentDate')?.value">
+        <label>Available Time Slots *</label>
+        <div *ngIf="loadingTimeSlots" class="loading-slots">Loading available time slots...</div>
+        <div *ngIf="!loadingTimeSlots && availableTimeSlots.length === 0" class="no-slots">
+          No available time slots for the selected date and doctor.
+        </div>
+        <div *ngIf="!loadingTimeSlots && availableTimeSlots.length > 0" class="time-slots">
+          <label *ngFor="let slot of availableTimeSlots" class="time-slot-option">
+            <input 
+              type="radio" 
+              name="appointmentTime" 
+              [value]="slot.timeSlot"
+              formControlName="appointmentTime"
+            />
+            <span>{{ formatTimeSlot(slot) }}</span>
+          </label>
+        </div>
+        <span class="error-message" *ngIf="appointmentForm.get('appointmentTime')?.invalid && appointmentForm.get('appointmentTime')?.touched">
+          Please select a time slot
+        </span>
+      </div>
+
+      <div class="form-group">
+        <label for="notes">Notes</label>
+        <textarea 
+          id="notes" 
+          formControlName="notes"
+          rows="4"
+          placeholder="Enter any additional notes or special requirements..."
+        ></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="isLoading || !appointmentForm.valid">
+          {{ isLoading ? 'Scheduling...' : 'Schedule Appointment' }}
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="toggleForm()">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Appointments List -->
+  <div class="appointments-list">
+    <h2>Scheduled Appointments</h2>
+    <div *ngIf="isLoading" class="loading">Loading appointments...</div>
+    
+    <div *ngIf="!isLoading && appointments.length === 0" class="no-data">
+      No appointments scheduled. Schedule a new appointment to get started.
+    </div>
+
+    <div *ngIf="!isLoading && appointments.length > 0" class="appointments-grid">
+      <div *ngFor="let appointment of appointments" class="appointment-card">
+        <div class="appointment-header">
+          <span class="appointment-date">
+            {{ appointment.appointmentDate | date:'MMM dd, yyyy' }}
+          </span>
+          <span [class]="getStatusClass(appointment.status)">
+            {{ appointment.status }}
+          </span>
+        </div>
+        <div class="appointment-body">
+          <div class="info-row">
+            <strong>Patient:</strong> {{ appointment.patientName }}
+          </div>
+          <div class="info-row">
+            <strong>Doctor:</strong> {{ appointment.doctorName }}
+          </div>
+          <div class="info-row">
+            <strong>Time:</strong> {{ appointment.appointmentTime }} ({{ appointment.durationMinutes }} min)
+          </div>
+          <div class="info-row" *ngIf="appointment.notes">
+            <strong>Notes:</strong> {{ appointment.notes }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

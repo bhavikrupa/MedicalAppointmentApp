@@ -1,0 +1,34 @@
+<div class="dashboard-container">
+  <h2>Dashboard</h2>
+  
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-number">{{ stats.totalPatients }}</div>
+      <div class="stat-label">Total Patients</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-number">{{ stats.totalAppointments }}</div>
+      <div class="stat-label">Total Appointments</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-number">{{ stats.todaysAppointments }}</div>
+      <div class="stat-label">Today's Appointments</div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-number">{{ stats.pendingBills }}</div>
+      <div class="stat-label">Pending Bills</div>
+    </div>
+  </div>
+
+  <div class="quick-actions">
+    <h3>Quick Actions</h3>
+    <div class="action-buttons">
+      <button class="action-btn primary" routerLink="/patients">Add New Patient</button>
+      <button class="action-btn secondary" routerLink="/appointments">Schedule Appointment</button>
+      <button class="action-btn tertiary" routerLink="/billing">Create Invoice</button>
+    </div>
+  </div>
+</div>

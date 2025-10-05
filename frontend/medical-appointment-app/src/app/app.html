@@ -1,0 +1,17 @@
+<!-- Medical Appointment System -->
+<div class="app-container">
+  <header class="app-header">
+    <h1>{{ title() }}</h1>
+    <nav class="main-nav">
+      <a routerLink="/dashboard" routerLinkActive="active" class="nav-link">Dashboard</a>
+      <a routerLink="/patients" routerLinkActive="active" class="nav-link">Patients</a>
+      <a routerLink="/appointments" routerLinkActive="active" class="nav-link">Appointments</a>
+      <a routerLink="/doctor-schedules" routerLinkActive="active" class="nav-link">Doctor Schedules</a>
+      <a routerLink="/billing" routerLinkActive="active" class="nav-link">Billing</a>
+    </nav>
+  </header>
+  
+  <main class="app-main">
+    <router-outlet />
+  </main>
+</div>

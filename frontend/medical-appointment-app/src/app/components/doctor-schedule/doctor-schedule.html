@@ -1,0 +1,93 @@
+<div class="doctor-schedule">
+  <div class="header">
+    <h1>Doctor Schedule</h1>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="errorMessage" class="alert alert-error">
+    {{ errorMessage }}
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <form [formGroup]="filterForm">
+      <div class="form-group">
+        <label for="doctorId">Select Doctor</label>
+        <select id="doctorId" formControlName="doctorId">
+          <option value="">Select a doctor</option>
+          <option *ngFor="let doctor of doctors" [value]="doctor.id">
+            Dr. {{ doctor.firstName }} {{ doctor.lastName }} - {{ doctor.specialization }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="date">Select Date</label>
+        <input type="date" id="date" formControlName="date" />
+      </div>
+    </form>
+  </div>
+
+  <!-- Doctor Info -->
+  <div *ngIf="getSelectedDoctor()" class="doctor-info">
+    <h2>Dr. {{ getSelectedDoctor()?.firstName }} {{ getSelectedDoctor()?.lastName }}</h2>
+    <p><strong>Specialization:</strong> {{ getSelectedDoctor()?.specialization }}</p>
+    <p><strong>Email:</strong> {{ getSelectedDoctor()?.email }}</p>
+    <p><strong>Phone:</strong> {{ getSelectedDoctor()?.phone }}</p>
+  </div>
+
+  <!-- Weekly Schedule -->
+  <div *ngIf="selectedDoctorId && schedules.length > 0" class="weekly-schedule">
+    <h3>Weekly Schedule</h3>
+    <div class="schedule-grid">
+      <div *ngFor="let schedule of schedules" class="schedule-card" [class.inactive]="!schedule.isActive">
+        <div class="day-name">{{ getDayOfWeekLabel(schedule.dayOfWeek) }}</div>
+        <div class="time-range">
+          <span *ngIf="schedule.isActive">
+            {{ formatTimeRange(schedule.startTime, schedule.endTime) }}
+          </span>
+          <span *ngIf="!schedule.isActive" class="unavailable">Unavailable</span>
+        </div>
+        <div class="max-patients">
+          <span *ngIf="schedule.isActive">Max Patients: {{ schedule.maxPatientsPerDay }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily Schedule -->
+  <div *ngIf="selectedDoctorId && selectedDate" class="daily-schedule">
+    <h3>Schedule for {{ selectedDate | date:'EEEE, MMMM d, yyyy' }}</h3>
+    
+    <div *ngIf="isLoading" class="loading">Loading schedule...</div>
+
+    <div *ngIf="!isLoading && !hasScheduleForSelectedDate()" class="no-schedule">
+      No schedule available for this day.
+    </div>
+
+    <div *ngIf="!isLoading && hasScheduleForSelectedDate()" class="time-slots">
+      <div *ngFor="let timeSlot of getTimeSlots()" class="time-slot" [class.available]="isSlotAvailable(timeSlot)" [class.booked]="!isSlotAvailable(timeSlot)">
+        <div class="time-label">
+          {{ formatTime(timeSlot) }}
+        </div>
+        <div class="slot-status">
+          <span *ngIf="isSlotAvailable(timeSlot)" class="available-badge">Available</span>
+          <div *ngIf="!isSlotAvailable(timeSlot)" class="appointments">
+            <div *ngFor="let appointment of getAppointmentsForTime(timeSlot)" class="appointment-item">
+              <span class="patient-info">Patient ID: {{ appointment.patientId }}</span>
+              <span [ngClass]="getStatusClass(appointment.status)" class="status-badge">
+                {{ appointment.status }}
+              </span>
+              <span class="duration">{{ appointment.durationMinutes }} min</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- No Doctor Selected -->
+  <div *ngIf="!selectedDoctorId" class="no-selection">
+    <p>Please select a doctor to view their schedule.</p>
+  </div>
+</div>

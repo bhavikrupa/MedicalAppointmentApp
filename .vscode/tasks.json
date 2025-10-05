@@ -1,0 +1,60 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start Backend API",
+            "type": "shell",
+            "command": "dotnet",
+            "args": ["run"],
+            "options": {
+                "cwd": "${workspaceFolder}/backend/MedicalAppointmentApi"
+            },
+            "group": "build",
+            "isBackground": true,
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Start Frontend App",
+            "type": "shell",
+            "command": "ng",
+            "args": ["serve", "--host", "0.0.0.0", "--port", "4200"],
+            "options": {
+                "cwd": "${workspaceFolder}/frontend/medical-appointment-app"
+            },
+            "group": "build",
+            "isBackground": true,
+            "problemMatcher": []
+        },
+        {
+            "label": "Start Full Application",
+            "dependsOrder": "parallel",
+            "dependsOn": [
+                "Start Backend API",
+                "Start Frontend App"
+            ],
+            "group": "build"
+        },
+        {
+            "label": "Build Backend",
+            "type": "shell",
+            "command": "dotnet",
+            "args": ["build"],
+            "options": {
+                "cwd": "${workspaceFolder}/backend/MedicalAppointmentApi"
+            },
+            "group": "build",
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build Frontend",
+            "type": "shell",
+            "command": "ng",
+            "args": ["build"],
+            "options": {
+                "cwd": "${workspaceFolder}/frontend/medical-appointment-app"
+            },
+            "group": "build",
+            "problemMatcher": []
+        }
+    ]
+}
