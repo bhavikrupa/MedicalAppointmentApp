@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.angular/
+.vscode/
+.git/
+*.md
+.gitignore
+.editorconfig
+karma.conf.js
+*.spec.ts
+e2e/
+coverage/
+.DS_Store

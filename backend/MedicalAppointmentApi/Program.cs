@@ -1,5 +1,7 @@
-using Supabase;
-using MedicalAppointmentApi.Services;
+using MedicalAppointmentApp.Business.Interfaces;
+using MedicalAppointmentApp.Business.Services;
+using MedicalAppointmentApp.Data.Interfaces;
+using MedicalAppointmentApp.Data.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,20 +32,19 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Configure Supabase
-var supabaseUrl = builder.Configuration["Supabase:Url"] ?? throw new InvalidOperationException("Supabase URL not configured");
-var supabaseKey = builder.Configuration["Supabase:Key"] ?? throw new InvalidOperationException("Supabase Key not configured");
+// Register Data Layer (Repositories)
+builder.Services.AddScoped<IPatientRepository, PatientRepository>();
+builder.Services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
+builder.Services.AddScoped<IServiceRepository, ServiceRepository>();
+builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 
-var options = new SupabaseOptions
-{
-    AutoRefreshToken = true,
-    AutoConnectRealtime = true
-};
-
-builder.Services.AddScoped(_ => new Supabase.Client(supabaseUrl, supabaseKey, options));
-
-// Register application services
-builder.Services.AddScoped<ISupabaseService, SupabaseService>();
+// Register Business Layer (Services)
+builder.Services.AddScoped<IPatientService, PatientService>();
+builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+builder.Services.AddScoped<IDoctorService, DoctorService>();
+builder.Services.AddScoped<IServiceService, ServiceService>();
+builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 
 // Add logging
 builder.Services.AddLogging();

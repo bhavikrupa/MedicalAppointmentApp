@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using MedicalAppointmentApi.Services;
-using MedicalAppointmentApi.DTOs;
+using MedicalAppointmentApp.Business.Interfaces;
+using MedicalAppointmentApp.Models.Common;
+using MedicalAppointmentApp.Models.DTOs;
 
 namespace MedicalAppointmentApi.Controllers
 {
@@ -8,12 +9,12 @@ namespace MedicalAppointmentApi.Controllers
     [Route("api/[controller]")]
     public class InvoicesController : ControllerBase
     {
-        private readonly ISupabaseService _supabaseService;
+        private readonly IInvoiceService _invoiceService;
         private readonly ILogger<InvoicesController> _logger;
 
-        public InvoicesController(ISupabaseService supabaseService, ILogger<InvoicesController> logger)
+        public InvoicesController(IInvoiceService invoiceService, ILogger<InvoicesController> logger)
         {
-            _supabaseService = supabaseService;
+            _invoiceService = invoiceService;
             _logger = logger;
         }
 
@@ -25,7 +26,7 @@ namespace MedicalAppointmentApi.Controllers
         {
             try
             {
-                var result = await _supabaseService.GetInvoicesAsync();
+                var result = await _invoiceService.GetInvoicesAsync();
                 return Ok(result);
             }
             catch (Exception ex)
@@ -65,7 +66,7 @@ namespace MedicalAppointmentApi.Controllers
                     });
                 }
 
-                var result = await _supabaseService.CreateInvoiceAsync(invoiceDto);
+                var result = await _invoiceService.CreateInvoiceAsync(invoiceDto);
                 
                 if (result.Success)
                 {

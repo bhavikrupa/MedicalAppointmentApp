@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # Backend API Service (Development)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: MedicalAppointmentApi/Dockerfile
+    container_name: medical-appointment-api-dev
+    ports:
+      - "5236:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - Supabase__Url=${SUPABASE_URL}
+      - Supabase__Key=${SUPABASE_KEY}
+      - ConnectionStrings__Supabase=${SUPABASE_CONNECTION_STRING}
+      - AllowedOrigins=http://localhost:4200
+    volumes:
+      - ./backend/MedicalAppointmentApi:/app
+    networks:
+      - medical-app-network
+    restart: unless-stopped
+
+  # Frontend Angular Service (Development)
+  frontend:
+    build:
+      context: ./frontend/medical-appointment-app
+      dockerfile: Dockerfile
+    container_name: medical-appointment-frontend-dev
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+    networks:
+      - medical-app-network
+    restart: unless-stopped
+
+networks:
+  medical-app-network:
+    driver: bridge

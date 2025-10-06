@@ -75,12 +75,35 @@ This application provides a streamlined solution for small clinics to manage the
 
 ### Running the Application
 
-#### Option 1: Using VS Code Tasks
+#### Option 1: Docker (Recommended for Production)
+
+**Quick Start with Docker Compose:**
+```bash
+# Windows
+.\docker-start.ps1
+
+# Linux/Mac
+./docker-start.sh
+```
+
+This will:
+- Build both backend and frontend Docker images
+- Start all services with proper networking
+- Backend: http://localhost:5236
+- Frontend: http://localhost:4200
+
+**Prerequisites:**
+- Docker Desktop installed
+- Create `.env` file from `.env.example` with your Supabase credentials
+
+📖 **See [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md) for complete Docker documentation**
+
+#### Option 2: Using VS Code Tasks
 1. Open the project in VS Code
 2. Press `Ctrl+Shift+P` and run "Tasks: Run Task"
 3. Select "Start Full Application" to run both backend and frontend
 
-#### Option 2: Manual Startup
+#### Option 3: Manual Startup
 
 **Backend API:**
 ```bash
@@ -113,7 +136,27 @@ ng build --configuration production
 
 ## 🚀 Production Deployment
 
-### Option 1: Azure Deployment
+### Option 1: Docker Deployment (Recommended)
+
+**Complete Docker setup is included with:**
+- Multi-stage builds for optimized images
+- Production and development configurations
+- Automated deployment scripts
+- Health checks and networking
+- Nginx for serving frontend
+
+📖 **See [DOCKER_DEPLOYMENT.md](DOCKER_DEPLOYMENT.md) for detailed instructions**
+
+**Quick Deployment:**
+```bash
+# Windows
+.\docker-start.ps1
+
+# Linux/Mac
+./docker-start.sh
+```
+
+### Option 2: Azure Deployment
 
 #### Backend (Azure App Service)
 1. Create an Azure App Service for .NET 8
@@ -138,83 +181,6 @@ ng build --configuration production
    ```bash
    az staticwebapp create --name your-app-name --resource-group your-rg
    ```
-
-### Option 2: Docker Deployment
-
-#### Backend Dockerfile
-Create `backend/MedicalAppointmentApi/Dockerfile`:
-```dockerfile
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-WORKDIR /app
-EXPOSE 80
-
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /src
-COPY ["MedicalAppointmentApi.csproj", "./"]
-RUN dotnet restore "MedicalAppointmentApi.csproj"
-COPY . .
-RUN dotnet build "MedicalAppointmentApi.csproj" -c Release -o /app/build
-
-FROM build AS publish
-RUN dotnet publish "MedicalAppointmentApi.csproj" -c Release -o /app/publish
-
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "MedicalAppointmentApi.dll"]
-```
-
-Build and run:
-```bash
-docker build -t medical-api .
-docker run -p 8080:80 -e Supabase__Url=your-url -e Supabase__Key=your-key medical-api
-```
-
-#### Frontend Dockerfile
-Create `frontend/medical-appointment-app/Dockerfile`:
-```dockerfile
-FROM node:20-alpine AS build
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-FROM nginx:alpine
-COPY --from=build /app/dist/medical-appointment-app/browser /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/nginx.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-Create `frontend/medical-appointment-app/nginx.conf`:
-```nginx
-events {
-    worker_connections 1024;
-}
-
-http {
-    include /etc/nginx/mime.types;
-    default_type application/octet-stream;
-
-    server {
-        listen 80;
-        server_name localhost;
-        root /usr/share/nginx/html;
-        index index.html;
-
-        location / {
-            try_files $uri $uri/ /index.html;
-        }
-    }
-}
-```
-
-Build and run:
-```bash
-docker build -t medical-frontend .
-docker run -p 4200:80 medical-frontend
-```
 
 ### Option 3: Traditional Hosting
 
@@ -339,7 +305,7 @@ export const environment = {
 
 ### ✅ Completed
 - ✅ Database schema and stored procedures
-- ✅ Backend API with all endpoints
+- ✅ Backend API with all endpoints (Layered architecture: API → Business → Data → Models)
 - ✅ Frontend services and routing
 - ✅ Authentication integration with Supabase
 - ✅ Build configuration and tasks
@@ -350,6 +316,10 @@ export const environment = {
 - ✅ Doctor Schedule Management (weekly and daily schedule views)
 - ✅ Form validation and error handling (reactive forms throughout)
 - ✅ Responsive SCSS styling for all components
+- ✅ Docker containerization (Backend + Frontend with Nginx)
+- ✅ Docker Compose orchestration (Production + Development)
+- ✅ Automated deployment scripts (Windows PowerShell + Linux/Mac Bash)
+- ✅ Complete Docker documentation
 
 ### 🚧 TODO
 - ⏳ Integration/E2E testing

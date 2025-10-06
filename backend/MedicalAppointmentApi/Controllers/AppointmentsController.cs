@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using MedicalAppointmentApi.Services;
-using MedicalAppointmentApi.DTOs;
+using MedicalAppointmentApp.Business.Interfaces;
+using MedicalAppointmentApp.Models.Common;
+using MedicalAppointmentApp.Models.DTOs;
 
 namespace MedicalAppointmentApi.Controllers
 {
@@ -8,12 +9,12 @@ namespace MedicalAppointmentApi.Controllers
     [Route("api/[controller]")]
     public class AppointmentsController : ControllerBase
     {
-        private readonly ISupabaseService _supabaseService;
+        private readonly IAppointmentService _appointmentService;
         private readonly ILogger<AppointmentsController> _logger;
 
-        public AppointmentsController(ISupabaseService supabaseService, ILogger<AppointmentsController> logger)
+        public AppointmentsController(IAppointmentService appointmentService, ILogger<AppointmentsController> logger)
         {
-            _supabaseService = supabaseService;
+            _appointmentService = appointmentService;
             _logger = logger;
         }
 
@@ -25,7 +26,7 @@ namespace MedicalAppointmentApi.Controllers
         {
             try
             {
-                var result = await _supabaseService.GetAppointmentsAsync();
+                var result = await _appointmentService.GetAppointmentsAsync();
                 return Ok(result);
             }
             catch (Exception ex)
@@ -56,7 +57,7 @@ namespace MedicalAppointmentApi.Controllers
                     });
                 }
 
-                var result = await _supabaseService.ScheduleAppointmentAsync(appointmentDto);
+                var result = await _appointmentService.ScheduleAppointmentAsync(appointmentDto);
                 
                 if (result.Success)
                 {
@@ -98,7 +99,7 @@ namespace MedicalAppointmentApi.Controllers
                 // Ensure the appointment ID matches
                 completeDto.AppointmentId = appointmentId;
 
-                var result = await _supabaseService.CompleteAppointmentWithBillingAsync(completeDto);
+                var result = await _appointmentService.CompleteAppointmentWithBillingAsync(completeDto);
                 
                 if (result.Success)
                 {

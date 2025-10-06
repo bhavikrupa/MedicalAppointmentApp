@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using MedicalAppointmentApi.Services;
-using MedicalAppointmentApi.DTOs;
-using MedicalAppointmentApi.Models;
+using MedicalAppointmentApp.Business.Interfaces;
+using MedicalAppointmentApp.Models.Common;
+using MedicalAppointmentApp.Models.DTOs;
 
 namespace MedicalAppointmentApi.Controllers
 {
@@ -9,12 +9,14 @@ namespace MedicalAppointmentApi.Controllers
     [Route("api/[controller]")]
     public class DoctorsController : ControllerBase
     {
-        private readonly ISupabaseService _supabaseService;
+        private readonly IDoctorService _doctorService;
+        private readonly IAppointmentService _appointmentService;
         private readonly ILogger<DoctorsController> _logger;
 
-        public DoctorsController(ISupabaseService supabaseService, ILogger<DoctorsController> logger)
+        public DoctorsController(IDoctorService doctorService, IAppointmentService appointmentService, ILogger<DoctorsController> logger)
         {
-            _supabaseService = supabaseService;
+            _doctorService = doctorService;
+            _appointmentService = appointmentService;
             _logger = logger;
         }
 
@@ -26,7 +28,7 @@ namespace MedicalAppointmentApi.Controllers
         {
             try
             {
-                var result = await _supabaseService.GetDoctorsAsync();
+                var result = await _doctorService.GetDoctorsAsync();
                 return Ok(result);
             }
             catch (Exception ex)
@@ -60,7 +62,7 @@ namespace MedicalAppointmentApi.Controllers
                     });
                 }
 
-                var result = await _supabaseService.GetDoctorScheduleAsync(doctorId, startDate, endDate);
+                var result = await _doctorService.GetDoctorScheduleAsync(doctorId, startDate, endDate);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -94,7 +96,7 @@ namespace MedicalAppointmentApi.Controllers
                     });
                 }
 
-                var result = await _supabaseService.GetAvailableTimeSlotsAsync(doctorId, appointmentDate, durationMinutes);
+                var result = await _appointmentService.GetAvailableTimeSlotsAsync(doctorId, appointmentDate, durationMinutes);
                 return Ok(result);
             }
             catch (Exception ex)
