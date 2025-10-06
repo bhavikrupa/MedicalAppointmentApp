@@ -12,6 +12,15 @@ export interface Doctor {
 }
 
 export interface DoctorSchedule {
+  date: string | Date;
+  dayName: string;
+  startTime: string | number;
+  endTime: string | number;
+  isAvailable: boolean;
+  appointments?: AppointmentSlot[];
+}
+
+export interface DoctorScheduleDb {
   id: string;
   doctorId: string;
   dayOfWeek: number;

@@ -15,8 +15,8 @@ namespace MedicalAppointmentApi.Services
         Task<ApiResponse<List<DoctorScheduleResponseDto>>> GetDoctorScheduleAsync(Guid doctorId, DateTime startDate, DateTime endDate);
         Task<ApiResponse<List<TimeSlotDto>>> GetAvailableTimeSlotsAsync(Guid doctorId, DateTime appointmentDate, int durationMinutes = 30);
         Task<ApiResponse<List<PatientResponseDto>>> GetPatientsAsync();
-        Task<ApiResponse<List<Doctor>>> GetDoctorsAsync();
-        Task<ApiResponse<List<Service>>> GetServicesAsync();
+        Task<ApiResponse<List<DoctorResponseDto>>> GetDoctorsAsync();
+        Task<ApiResponse<List<ServiceResponseDto>>> GetServicesAsync();
         Task<ApiResponse<List<InvoiceResponseDto>>> GetInvoicesAsync();
         Task<ApiResponse<List<AppointmentResponseDto>>> GetAppointmentsAsync();
     }
@@ -39,10 +39,10 @@ namespace MedicalAppointmentApi.Services
             try
             {
                 var connectionString = _configuration.GetConnectionString("Supabase");
-                
+
                 await using var connection = new NpgsqlConnection(connectionString);
                 await connection.OpenAsync();
-                
+
                 await using var command = new NpgsqlCommand("SELECT * FROM create_patient($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)", connection);
                 command.Parameters.AddWithValue(patientDto.FirstName);
                 command.Parameters.AddWithValue(patientDto.LastName);
@@ -120,10 +120,10 @@ namespace MedicalAppointmentApi.Services
             try
             {
                 var connectionString = _configuration.GetConnectionString("Supabase");
-                
+
                 await using var connection = new NpgsqlConnection(connectionString);
                 await connection.OpenAsync();
-                
+
                 await using var command = new NpgsqlCommand("SELECT * FROM schedule_appointment($1, $2, $3, $4, $5, $6)", connection);
                 command.Parameters.AddWithValue(appointmentDto.PatientId);
                 command.Parameters.AddWithValue(appointmentDto.DoctorId);
@@ -147,7 +147,7 @@ namespace MedicalAppointmentApi.Services
                             PatientId = appointmentDto.PatientId,
                             DoctorId = appointmentDto.DoctorId,
                             AppointmentDate = appointmentDto.AppointmentDate,
-                            AppointmentTime = appointmentDto.AppointmentTime,
+                            AppointmentTime = reader.GetTimeSpan(6).ToString(@"hh\:mm"), // Convert TimeSpan to string in "hh:mm" format
                             DurationMinutes = appointmentDto.DurationMinutes,
                             Status = "scheduled",
                             Notes = appointmentDto.Notes,
@@ -193,13 +193,13 @@ namespace MedicalAppointmentApi.Services
             try
             {
                 var connectionString = _configuration.GetConnectionString("Supabase");
-                
+
                 await using var connection = new NpgsqlConnection(connectionString);
                 await connection.OpenAsync();
-                
+
                 var serviceIds = invoiceDto.Services.Select(s => s.ServiceId).ToArray();
                 var quantities = invoiceDto.Services.Select(s => s.Quantity).ToArray();
-                
+
                 await using var command = new NpgsqlCommand("SELECT * FROM create_invoice_with_services($1, $2, $3, $4, $5)", connection);
                 command.Parameters.AddWithValue(invoiceDto.PatientId);
                 command.Parameters.AddWithValue(invoiceDto.AppointmentId ?? (object)DBNull.Value);
@@ -269,13 +269,13 @@ namespace MedicalAppointmentApi.Services
             try
             {
                 var connectionString = _configuration.GetConnectionString("Supabase");
-                
+
                 await using var connection = new NpgsqlConnection(connectionString);
                 await connection.OpenAsync();
-                
+
                 var serviceIds = completeDto.Services.Select(s => s.ServiceId).ToArray();
                 var quantities = completeDto.Services.Select(s => s.Quantity).ToArray();
-                
+
                 await using var command = new NpgsqlCommand("SELECT * FROM complete_appointment_with_billing($1, $2, $3, $4, $5)", connection);
                 command.Parameters.AddWithValue(completeDto.AppointmentId);
                 command.Parameters.AddWithValue(serviceIds);
@@ -330,17 +330,17 @@ namespace MedicalAppointmentApi.Services
             try
             {
                 var connectionString = _configuration.GetConnectionString("Supabase");
-                
+
                 await using var connection = new NpgsqlConnection(connectionString);
                 await connection.OpenAsync();
-                
+
                 await using var command = new NpgsqlCommand("SELECT * FROM get_doctor_schedule($1, $2, $3)", connection);
                 command.Parameters.AddWithValue(doctorId);
                 command.Parameters.AddWithValue(startDate.Date);
                 command.Parameters.AddWithValue(endDate.Date);
 
                 var schedules = new List<DoctorScheduleResponseDto>();
-                
+
                 await using var reader = await command.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
@@ -377,17 +377,17 @@ namespace MedicalAppointmentApi.Services
             try
             {
                 var connectionString = _configuration.GetConnectionString("Supabase");
-                
+
                 await using var connection = new NpgsqlConnection(connectionString);
                 await connection.OpenAsync();
-                
+
                 await using var command = new NpgsqlCommand("SELECT * FROM get_available_time_slots($1, $2, $3)", connection);
                 command.Parameters.AddWithValue(doctorId);
                 command.Parameters.AddWithValue(appointmentDate.Date);
                 command.Parameters.AddWithValue(durationMinutes);
 
                 var timeSlots = new List<TimeSlotDto>();
-                
+
                 await using var reader = await command.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
@@ -425,7 +425,7 @@ namespace MedicalAppointmentApi.Services
 
                 await using var connection = new NpgsqlConnection(connectionString);
                 await connection.OpenAsync();
-                
+
                 await using var command = new NpgsqlCommand(@"
                     SELECT id, first_name, last_name, email, phone, date_of_birth, 
                            address, emergency_contact_name, emergency_contact_phone,
@@ -433,6 +433,8 @@ namespace MedicalAppointmentApi.Services
                     FROM patients 
                     WHERE is_active = true
                     ORDER BY created_at DESC", connection);
+
+                command.CommandTimeout = 30; // Set command timeout
 
                 var patients = new List<PatientResponseDto>();
 
@@ -476,15 +478,15 @@ namespace MedicalAppointmentApi.Services
             }
         }
 
-        public async Task<ApiResponse<List<Doctor>>> GetDoctorsAsync()
+        public async Task<ApiResponse<List<DoctorResponseDto>>> GetDoctorsAsync()
         {
             try
             {
                 var connectionString = _configuration.GetConnectionString("Supabase");
-                
+
                 await using var connection = new NpgsqlConnection(connectionString);
                 await connection.OpenAsync();
-                
+
                 await using var command = new NpgsqlCommand(@"
                     SELECT id, first_name, last_name, email, phone, specialization, 
                            license_number, is_active, created_at, updated_at
@@ -492,12 +494,14 @@ namespace MedicalAppointmentApi.Services
                     WHERE is_active = true
                     ORDER BY last_name ASC", connection);
 
-                var doctors = new List<Doctor>();
-                
+                command.CommandTimeout = 30; // Set command timeout
+
+                var doctors = new List<DoctorResponseDto>();
+
                 await using var reader = await command.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
-                    doctors.Add(new Doctor
+                    doctors.Add(new DoctorResponseDto
                     {
                         Id = reader.GetGuid(0),
                         FirstName = reader.GetString(1),
@@ -512,7 +516,7 @@ namespace MedicalAppointmentApi.Services
                     });
                 }
 
-                return new ApiResponse<List<Doctor>>
+                return new ApiResponse<List<DoctorResponseDto>>
                 {
                     Success = true,
                     Message = doctors.Count > 0 ? "Doctors retrieved successfully" : "No doctors found",
@@ -522,7 +526,7 @@ namespace MedicalAppointmentApi.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting doctors");
-                return new ApiResponse<List<Doctor>>
+                return new ApiResponse<List<DoctorResponseDto>>
                 {
                     Success = false,
                     Message = "An error occurred while retrieving doctors"
@@ -530,27 +534,52 @@ namespace MedicalAppointmentApi.Services
             }
         }
 
-        public async Task<ApiResponse<List<Service>>> GetServicesAsync()
+        public async Task<ApiResponse<List<ServiceResponseDto>>> GetServicesAsync()
         {
             try
             {
-                var response = await _supabaseClient
-                    .From<Service>()
-                    .Where(s => s.IsActive)
-                    .Order(s => s.Name, Supabase.Postgrest.Constants.Ordering.Ascending)
-                    .Get();
+                var connectionString = _configuration.GetConnectionString("Supabase");
 
-                return new ApiResponse<List<Service>>
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+
+                await using var command = new NpgsqlCommand(@"
+                    SELECT id, name, description, price, duration_minutes, is_active, created_at, updated_at
+                    FROM services 
+                    WHERE is_active = true
+                    ORDER BY name ASC", connection);
+
+                command.CommandTimeout = 30; // Set command timeout
+
+                var services = new List<ServiceResponseDto>();
+
+                await using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    services.Add(new ServiceResponseDto
+                    {
+                        Id = reader.GetGuid(0),
+                        Name = reader.GetString(1),
+                        Description = reader.IsDBNull(2) ? null : reader.GetString(2),
+                        Price = reader.GetDecimal(3),
+                        DurationMinutes = reader.GetInt32(4),
+                        IsActive = reader.GetBoolean(5),
+                        CreatedAt = reader.GetDateTime(6),
+                        UpdatedAt = reader.GetDateTime(7)
+                    });
+                }
+
+                return new ApiResponse<List<ServiceResponseDto>>
                 {
                     Success = true,
-                    Message = "Services retrieved successfully",
-                    Data = response.Models
+                    Message = services.Count > 0 ? "Services retrieved successfully" : "No services found",
+                    Data = services
                 };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting services");
-                return new ApiResponse<List<Service>>
+                return new ApiResponse<List<ServiceResponseDto>>
                 {
                     Success = false,
                     Message = "An error occurred while retrieving services"
@@ -635,30 +664,32 @@ namespace MedicalAppointmentApi.Services
             try
             {
                 var connectionString = _configuration.GetConnectionString("Supabase");
-                
+
                 await using var connection = new NpgsqlConnection(connectionString);
                 await connection.OpenAsync();
-                
+
                 await using var command = new NpgsqlCommand(@"
-                    SELECT 
-                        a.id, 
-                        a.patient_id, 
-                        CONCAT(p.first_name, ' ', p.last_name) as patient_name,
-                        a.doctor_id, 
-                        CONCAT('Dr. ', d.first_name, ' ', d.last_name) as doctor_name,
-                        a.appointment_date, 
-                        a.appointment_time,
-                        a.duration_minutes, 
-                        a.status, 
-                        a.notes,
-                        a.created_at
-                    FROM appointments a
-                    INNER JOIN patients p ON a.patient_id = p.id
-                    INNER JOIN doctors d ON a.doctor_id = d.id
-                    ORDER BY a.appointment_date DESC, a.appointment_time DESC", connection);
+            SELECT 
+                a.id, 
+                a.patient_id, 
+                CONCAT(p.first_name, ' ', p.last_name) as patient_name,
+                a.doctor_id, 
+                CONCAT('Dr. ', d.first_name, ' ', d.last_name) as doctor_name,
+                a.appointment_date, 
+                a.appointment_time::text as appointment_time,
+                a.duration_minutes, 
+                a.status, 
+                a.notes,
+                a.created_at
+            FROM appointments a
+            INNER JOIN patients p ON a.patient_id = p.id
+            INNER JOIN doctors d ON a.doctor_id = d.id
+            ORDER BY a.appointment_date DESC, a.appointment_time DESC", connection);
+
+                command.CommandTimeout = 30; // Set command timeout
 
                 var appointments = new List<AppointmentResponseDto>();
-                
+
                 await using var reader = await command.ExecuteReaderAsync();
                 while (await reader.ReadAsync())
                 {
@@ -670,7 +701,7 @@ namespace MedicalAppointmentApi.Services
                         DoctorId = reader.GetGuid(3),
                         DoctorName = reader.GetString(4),
                         AppointmentDate = reader.GetDateTime(5),
-                        AppointmentTime = reader.GetFieldValue<TimeSpan>(6),
+                        AppointmentTime = reader.GetString(6), // Now reading as string
                         DurationMinutes = reader.GetInt32(7),
                         Status = reader.GetString(8),
                         Notes = reader.IsDBNull(9) ? null : reader.GetString(9),

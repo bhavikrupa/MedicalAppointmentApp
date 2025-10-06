@@ -47,15 +47,23 @@ export class PatientManagement implements OnInit {
     
     this.patientService.getPatients().subscribe({
       next: (response) => {
-        if (response.success && response.data) {
-          this.patients = response.data;
+        console.log('Patient API Response:', response); // Debug log
+        if (response.success) {
+          this.patients = response.data || [];
+          console.log('Loaded patients:', this.patients); // Debug log
+          if (this.patients.length === 0) {
+            console.warn('No patients found in response');
+          }
         } else {
           this.errorMessage = response.message || 'Failed to load patients';
+          console.error('API returned unsuccessful:', response);
         }
         this.isLoading = false;
       },
       error: (error) => {
-        this.errorMessage = 'Error loading patients: ' + error.message;
+        console.error('Error loading patients:', error);
+        this.errorMessage = 'Error loading patients: ' + (error.error?.message || error.message || 'Unknown error');
+        this.patients = [];
         this.isLoading = false;
       }
     });

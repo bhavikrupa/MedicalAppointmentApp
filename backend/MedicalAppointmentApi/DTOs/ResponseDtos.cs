@@ -23,6 +23,32 @@ namespace MedicalAppointmentApi.DTOs
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
     }
+
+    public class DoctorResponseDto
+    {
+        public Guid Id { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string? Phone { get; set; }
+        public string? Specialization { get; set; }
+        public string? LicenseNumber { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+
+    public class ServiceResponseDto
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public decimal Price { get; set; }
+        public int DurationMinutes { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
     
     public class AppointmentResponseDto
     {
@@ -32,7 +58,7 @@ namespace MedicalAppointmentApi.DTOs
         public Guid DoctorId { get; set; }
         public string DoctorName { get; set; } = string.Empty;
         public DateTime AppointmentDate { get; set; }
-        public TimeSpan AppointmentTime { get; set; }
+        public string AppointmentTime { get; set; } = string.Empty;
         public int DurationMinutes { get; set; }
         public string Status { get; set; } = string.Empty;
         public string? Notes { get; set; }

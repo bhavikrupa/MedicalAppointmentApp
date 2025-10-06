@@ -133,31 +133,53 @@
       No appointments scheduled. Schedule a new appointment to get started.
     </div>
 
-    <div *ngIf="!isLoading && appointments.length > 0" class="appointments-grid">
-      <div *ngFor="let appointment of appointments" class="appointment-card">
-        <div class="appointment-header">
-          <span class="appointment-date">
-            {{ appointment.appointmentDate | date:'MMM dd, yyyy' }}
-          </span>
-          <span [class]="getStatusClass(appointment.status)">
-            {{ appointment.status }}
-          </span>
-        </div>
-        <div class="appointment-body">
-          <div class="info-row">
-            <strong>Patient:</strong> {{ appointment.patientName }}
-          </div>
-          <div class="info-row">
-            <strong>Doctor:</strong> {{ appointment.doctorName }}
-          </div>
-          <div class="info-row">
-            <strong>Time:</strong> {{ appointment.appointmentTime }} ({{ appointment.durationMinutes }} min)
-          </div>
-          <div class="info-row" *ngIf="appointment.notes">
-            <strong>Notes:</strong> {{ appointment.notes }}
-          </div>
-        </div>
-      </div>
+    <div *ngIf="!isLoading && appointments.length > 0" class="table-container">
+      <table class="appointments-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Patient</th>
+            <th>Doctor</th>
+            <th>Duration</th>
+            <th>Status</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let appointment of appointments" [class]="'row-' + appointment.status.toLowerCase()">
+            <td class="date-cell">
+              <div class="date-wrapper">
+                <span class="day">{{ appointment.appointmentDate | date:'dd' }}</span>
+                <span class="month">{{ appointment.appointmentDate | date:'MMM' }}</span>
+                <span class="year">{{ appointment.appointmentDate | date:'yyyy' }}</span>
+              </div>
+            </td>
+            <td class="time-cell">
+              <span class="time">{{ appointment.appointmentTime }}</span>
+            </td>
+            <td class="patient-cell">
+              <span class="patient-name">{{ appointment.patientName }}</span>
+            </td>
+            <td class="doctor-cell">
+              <span class="doctor-name">{{ appointment.doctorName }}</span>
+            </td>
+            <td class="duration-cell">
+              <span class="duration">{{ appointment.durationMinutes }} min</span>
+            </td>
+            <td class="status-cell">
+              <span [class]="getStatusClass(appointment.status)">
+                {{ appointment.status | titlecase }}
+              </span>
+            </td>
+            <td class="notes-cell">
+              <span class="notes" [title]="appointment.notes || 'No notes'">
+                {{ appointment.notes || '-' }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

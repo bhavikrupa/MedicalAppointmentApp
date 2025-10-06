@@ -22,7 +22,7 @@ namespace MedicalAppointmentApi.Controllers
         /// Get all active services
         /// </summary>
         [HttpGet]
-        public async Task<ActionResult<ApiResponse<List<Service>>>> GetServices()
+        public async Task<ActionResult<ApiResponse<List<ServiceResponseDto>>>> GetServices()
         {
             try
             {
@@ -32,7 +32,7 @@ namespace MedicalAppointmentApi.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving services");
-                return StatusCode(500, new ApiResponse<List<Service>>
+                return StatusCode(500, new ApiResponse<List<ServiceResponseDto>>
                 {
                     Success = false,
                     Message = "An error occurred while retrieving services"

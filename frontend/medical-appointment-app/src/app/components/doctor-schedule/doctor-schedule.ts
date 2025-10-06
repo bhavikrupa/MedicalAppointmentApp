@@ -65,28 +65,45 @@ export class DoctorSchedule implements OnInit {
   loadDoctors(): void {
     this.doctorService.getDoctors().subscribe({
       next: (response) => {
-        if (response.success && response.data) {
-          this.doctors = response.data.filter(d => d.isActive);
-          if (this.doctors.length > 0) {
-            this.filterForm.patchValue({ doctorId: this.doctors[0].id });
+        console.log('Doctors API Response:', response); // Debug log
+        if (response.success) {
+          this.doctors = (response.data || []).filter(d => d.isActive);
+          console.log('Loaded doctors:', this.doctors); // Debug log
+          if (this.doctors.length === 0) {
+            console.warn('No active doctors found. Please add doctors first.');
           }
+        } else {
+          console.error('Failed to load doctors:', response.message);
+          this.doctors = [];
         }
       },
       error: (error) => {
-        this.errorMessage = 'Error loading doctors: ' + error.message;
+        console.error('Error loading doctors:', error);
+        this.doctors = [];
       }
     });
   }
 
   loadDoctorSchedule(): void {
-    if (!this.selectedDoctorId) return;
+    if (!this.selectedDoctorId) {
+      console.warn('No doctor selected');
+      return;
+    }
 
     this.isLoading = true;
+    this.errorMessage = '';
     
-    // Get the start of the week and end of the week
-    const today = new Date();
-    const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
-    const endOfWeek = new Date(today.setDate(today.getDate() + 6));
+    const date = new Date(this.selectedDate);
+    const startOfWeek = new Date(date);
+    startOfWeek.setDate(date.getDate() - date.getDay());
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+    
+    console.log('Loading schedule for:', {
+      doctorId: this.selectedDoctorId,
+      startDate: startOfWeek.toISOString().split('T')[0],
+      endDate: endOfWeek.toISOString().split('T')[0]
+    });
     
     this.doctorService.getDoctorSchedule(
       this.selectedDoctorId,
@@ -94,36 +111,70 @@ export class DoctorSchedule implements OnInit {
       endOfWeek.toISOString().split('T')[0]
     ).subscribe({
       next: (response) => {
-        if (response.success && response.data) {
-          this.schedules = response.data;
+        console.log('Schedule API Response:', response); // Debug log
+        if (response.success) {
+          this.schedules = response.data || [];
+          console.log('Loaded schedules:', this.schedules); // Debug log
+          if (this.schedules.length === 0) {
+            console.warn('No schedule found for selected doctor and date range');
+          }
+          this.loadAppointments();
         } else {
           this.errorMessage = response.message || 'Failed to load schedule';
+          console.error('API returned unsuccessful:', response);
         }
         this.isLoading = false;
       },
       error: (error) => {
-        this.errorMessage = 'Error loading schedule: ' + error.message;
+        console.error('Error loading schedule:', error);
+        this.errorMessage = 'Error loading schedule: ' + (error.error?.message || error.message || 'Unknown error');
+        this.schedules = [];
         this.isLoading = false;
       }
     });
   }
 
   loadAppointments(): void {
-    if (!this.selectedDoctorId || !this.selectedDate) return;
+    if (!this.selectedDoctorId || !this.selectedDate) {
+      console.warn('Missing doctorId or selectedDate');
+      return;
+    }
 
     this.appointmentService.getAppointments().subscribe({
       next: (response) => {
-        if (response.success && response.data) {
-          this.appointments = response.data.filter(a => 
-            a.doctorId === this.selectedDoctorId &&
-            this.isSameDate(new Date(a.appointmentDate), new Date(this.selectedDate))
-          );
+        console.log('Appointments API Response:', response); // Debug log
+        if (response.success) {
+          const allAppointments = response.data || [];
+          this.appointments = allAppointments.filter(a => {
+            const matchesDoctor = a.doctorId === this.selectedDoctorId;
+            const matchesDate = this.isSameDate(new Date(a.appointmentDate), new Date(this.selectedDate));
+            return matchesDoctor && matchesDate;
+          });
+          console.log('Filtered appointments:', this.appointments);
+        } else {
+          console.error('Failed to load appointments:', response.message);
         }
       },
       error: (error) => {
         console.error('Error loading appointments:', error);
       }
     });
+  }
+
+  getCurrentDate(): string {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  formatTime(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
   }
 
   isSameDate(date1: Date, date2: Date): boolean {
@@ -137,28 +188,16 @@ export class DoctorSchedule implements OnInit {
     return day ? day.label : 'Unknown';
   }
 
-  formatTime(seconds: number): string {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const displayHours = hours % 12 || 12;
-    return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
-  }
-
-  formatTimeRange(startTime: number, endTime: number): string {
-    return `${this.formatTime(startTime)} - ${this.formatTime(endTime)}`;
+  formatTimeRange(startTime: string | number, endTime: string | number): string {
+    const startSeconds = this.timeToSeconds(startTime);
+    const endSeconds = this.timeToSeconds(endTime);
+    return `${this.formatTime(startSeconds)} - ${this.formatTime(endSeconds)}`;
   }
 
   getScheduleForDate(date: Date): ScheduleModel | undefined {
-    const dayOfWeek = date.getDay();
-    return this.schedules.find(s => s.dayOfWeek === dayOfWeek && s.isActive);
-  }
-
-  getAppointmentsForTime(startTime: number): AppointmentModel[] {
-    return this.appointments.filter(a => {
-      const appointmentTime = this.parseTimeToSeconds(a.appointmentTime);
-      return appointmentTime === startTime;
-    });
+    return this.schedules.find(s => 
+      this.isSameDate(new Date(s.date), date)
+    );
   }
 
   parseTimeToSeconds(timeStr: string): number {
@@ -167,22 +206,60 @@ export class DoctorSchedule implements OnInit {
   }
 
   getTimeSlots(): number[] {
-    const schedule = this.getScheduleForDate(new Date(this.selectedDate));
-    if (!schedule) return [];
+    if (this.schedules.length === 0) {
+      console.warn('No schedules available to generate time slots');
+      return [];
+    }
+
+    const schedule = this.schedules.find(s => 
+      this.isSameDate(new Date(s.date), new Date(this.selectedDate))
+    );
+
+    if (!schedule) {
+      console.warn('No schedule found for selected date:', this.selectedDate);
+      return [];
+    }
 
     const slots: number[] = [];
+    const startSeconds = this.timeToSeconds(schedule.startTime);
+    const endSeconds = this.timeToSeconds(schedule.endTime);
     const slotDuration = 30 * 60; // 30 minutes in seconds
-    
-    for (let time = schedule.startTime; time < schedule.endTime; time += slotDuration) {
+
+    for (let time = startSeconds; time < endSeconds; time += slotDuration) {
       slots.push(time);
     }
-    
+
+    console.log('Generated time slots:', slots);
     return slots;
   }
 
-  isSlotAvailable(startTime: number): boolean {
-    const appointmentsAtTime = this.getAppointmentsForTime(startTime);
-    return appointmentsAtTime.length === 0;
+  timeToSeconds(time: any): number {
+    if (typeof time === 'string') {
+      const parts = time.split(':');
+      return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + (parseInt(parts[2]) || 0);
+    }
+    if (typeof time === 'number') {
+      return time;
+    }
+    return 0;
+  }
+
+  isSlotAvailable(timeSlot: number): boolean {
+    if (!this.appointments || this.appointments.length === 0) {
+      return true;
+    }
+
+    return !this.appointments.some(apt => {
+      const aptTime = this.timeToSeconds(apt.appointmentTime);
+      return aptTime === timeSlot;
+    });
+  }
+
+  getAppointmentsForTime(timeSlot: number): AppointmentModel[] {
+    return this.appointments.filter(apt => {
+      const aptTime = this.timeToSeconds(apt.appointmentTime);
+      return aptTime === timeSlot;
+    });
   }
 
   getStatusClass(status: string): string {

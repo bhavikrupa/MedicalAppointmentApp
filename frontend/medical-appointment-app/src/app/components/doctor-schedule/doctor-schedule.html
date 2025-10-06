@@ -40,16 +40,16 @@
   <div *ngIf="selectedDoctorId && schedules.length > 0" class="weekly-schedule">
     <h3>Weekly Schedule</h3>
     <div class="schedule-grid">
-      <div *ngFor="let schedule of schedules" class="schedule-card" [class.inactive]="!schedule.isActive">
-        <div class="day-name">{{ getDayOfWeekLabel(schedule.dayOfWeek) }}</div>
+      <div *ngFor="let schedule of schedules" class="schedule-card" [class.inactive]="!schedule.isAvailable">
+        <div class="day-name">{{ schedule.dayName }}</div>
         <div class="time-range">
-          <span *ngIf="schedule.isActive">
+          <span *ngIf="schedule.isAvailable">
             {{ formatTimeRange(schedule.startTime, schedule.endTime) }}
           </span>
-          <span *ngIf="!schedule.isActive" class="unavailable">Unavailable</span>
+          <span *ngIf="!schedule.isAvailable" class="unavailable">Unavailable</span>
         </div>
-        <div class="max-patients">
-          <span *ngIf="schedule.isActive">Max Patients: {{ schedule.maxPatientsPerDay }}</span>
+        <div class="schedule-date">
+          <span>{{ schedule.date | date:'shortDate' }}</span>
         </div>
       </div>
     </div>

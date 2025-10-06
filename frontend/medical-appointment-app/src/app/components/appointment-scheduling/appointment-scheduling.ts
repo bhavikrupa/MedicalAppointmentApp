@@ -51,7 +51,11 @@ export class AppointmentScheduling implements OnInit {
   }
 
   getCurrentDate(): string {
-    return new Date().toISOString().split('T')[0];
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   setupDateAndDoctorWatcher(): void {
@@ -74,23 +78,49 @@ export class AppointmentScheduling implements OnInit {
     
     this.appointmentService.getAppointments().subscribe({
       next: (response) => {
+        console.log('Appointment API Response:', response); // Debug log
         if (response.success) {
           this.appointments = response.data || [];
+          console.log('Loaded appointments:', this.appointments); // Debug log
+          
+          // Format appointment time if it's a TimeSpan object
+          this.appointments = this.appointments.map(apt => ({
+            ...apt,
+            appointmentTime: this.formatAppointmentTime(apt.appointmentTime)
+          }));
+          
           if (this.appointments.length === 0) {
-            console.log('No appointments found. Please add some appointments.');
+            console.log('No appointments found. Please schedule appointments.');
           }
         } else {
           this.errorMessage = response.message || 'Failed to load appointments';
+          console.error('API returned unsuccessful:', response);
         }
         this.isLoading = false;
       },
       error: (error) => {
         console.error('Error loading appointments:', error);
-        this.errorMessage = 'Error loading appointments: ' + (error.message || 'Unknown error');
+        this.errorMessage = 'Error loading appointments: ' + (error.error?.message || error.message || 'Unknown error');
         this.appointments = [];
         this.isLoading = false;
       }
     });
+  }
+
+  formatAppointmentTime(time: any): string {
+    if (typeof time === 'string') {
+      // If it's already a string like "10:00:00", format it
+      const parts = time.split(':');
+      if (parts.length >= 2) {
+        const hours = parseInt(parts[0]);
+        const minutes = parts[1];
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        return `${displayHours}:${minutes} ${period}`;
+      }
+      return time;
+    }
+    return time.toString();
   }
 
   loadPatients(): void {
@@ -225,22 +255,17 @@ export class AppointmentScheduling implements OnInit {
   }
 
   formatTimeSlot(timeSlot: TimeSlot): string {
-    // Parse the time slot string (format: "HH:MM:SS" or seconds)
-    const timeStr = timeSlot.timeSlot;
-    let hours: number, minutes: number;
-    
-    if (typeof timeStr === 'string') {
-      const parts = timeStr.split(':');
-      hours = parseInt(parts[0]);
-      minutes = parseInt(parts[1]);
-    } else {
-      hours = Math.floor(timeStr / 3600);
-      minutes = Math.floor((timeStr % 3600) / 60);
-    }
-    
+    const timeValue = typeof timeSlot.timeSlot === 'string' ? this.parseTimeToSeconds(timeSlot.timeSlot) : timeSlot.timeSlot;
+    const hours = Math.floor(timeValue / 3600);
+    const minutes = Math.floor((timeValue % 3600) / 60);
     const period = hours >= 12 ? 'PM' : 'AM';
     const displayHours = hours % 12 || 12;
     return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+  }
+
+  parseTimeToSeconds(timeStr: string): number {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 3600 + minutes * 60;
   }
 
   getStatusClass(status: string): string {

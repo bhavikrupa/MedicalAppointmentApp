@@ -55,15 +55,23 @@ export class Billing implements OnInit {
     
     this.invoiceService.getInvoices().subscribe({
       next: (response) => {
-        if (response.success && response.data) {
-          this.invoices = response.data;
+        console.log('Invoice API Response:', response); // Debug log
+        if (response.success) {
+          this.invoices = response.data || [];
+          console.log('Loaded invoices:', this.invoices); // Debug log
+          if (this.invoices.length === 0) {
+            console.log('No invoices found. Create invoices to see them here.');
+          }
         } else {
           this.errorMessage = response.message || 'Failed to load invoices';
+          console.error('API returned unsuccessful:', response);
         }
         this.isLoading = false;
       },
       error: (error) => {
-        this.errorMessage = 'Error loading invoices: ' + error.message;
+        console.error('Error loading invoices:', error);
+        this.errorMessage = 'Error loading invoices: ' + (error.error?.message || error.message || 'Unknown error');
+        this.invoices = [];
         this.isLoading = false;
       }
     });
@@ -72,10 +80,18 @@ export class Billing implements OnInit {
   loadCompletedAppointments(): void {
     this.appointmentService.getAppointments().subscribe({
       next: (response) => {
-        if (response.success && response.data) {
-          this.completedAppointments = response.data.filter(
+        console.log('Completed Appointments API Response:', response); // Debug log
+        if (response.success) {
+          const allAppointments = response.data || [];
+          this.completedAppointments = allAppointments.filter(
             a => a.status.toLowerCase() === 'completed' && !this.hasInvoice(a.id)
           );
+          console.log('Loaded completed appointments:', this.completedAppointments);
+          if (this.completedAppointments.length === 0) {
+            console.log('No completed appointments without invoices found.');
+          }
+        } else {
+          console.error('Failed to load appointments:', response.message);
         }
       },
       error: (error) => {
@@ -87,8 +103,15 @@ export class Billing implements OnInit {
   loadServices(): void {
     this.serviceService.getServices().subscribe({
       next: (response: any) => {
-        if (response.success && response.data) {
-          this.services = response.data.filter((s: any) => s.isActive);
+        console.log('Services API Response:', response); // Debug log
+        if (response.success) {
+          this.services = (response.data || []).filter((s: any) => s.isActive);
+          console.log('Loaded services:', this.services);
+          if (this.services.length === 0) {
+            console.warn('No active services found.');
+          }
+        } else {
+          console.error('Failed to load services:', response.message);
         }
       },
       error: (error: any) => {
